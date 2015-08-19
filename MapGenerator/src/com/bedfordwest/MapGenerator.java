@@ -4,12 +4,7 @@ package com.bedfordwest;
  * Created by Bedford on 3/28/2015.
  */
 
-// import com.gletho.levels.LevelTile;
-import com.gletho.util.Constants;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.logging.*;
 
 
@@ -24,19 +19,37 @@ import java.util.logging.*;
 public class MapGenerator
 {
 
+    public static void main (String[] arg) {
+        Scanner reader = new Scanner(System.in);
+        Random seedRand = new Random();
+        MapGenerator mapGen = new MapGenerator();
+        int x,y;
+        System.out.println("Enter the number of x map tiles:");
+        x = reader.nextInt();
+        System.out.println("Enter the number of y map tiles:");
+        y = reader.nextInt();
+        System.out.println("Your map array is:");
+        int map[][] = mapGen.getMap(seedRand.nextLong(), x, y);
+        System.out.println(Arrays.deepToString(map));
+    }
+
     private static Logger logger =
         Logger.getLogger(MapGenerator.class.getName());
     private static final String TAG = MapGenerator.class.getName();
 
-    private List<LevelTile> levelTiles = new ArrayList<LevelTile>();
+    private int[][] levelTiles;
     private boolean[][] map;
     int birthLimit = 4;
     int deathLimit = 3;
     int numberOfSteps = 6;
+    int level_x_tiles, level_y_tiles = 0;
 
     // The only way for another class to get
     //   a map should be through this method
-    public List<LevelTile> getMap(long seed) {
+    public int[][] getMap(long seed, int x_tiles, int y_tiles) {
+        levelTiles = new int[x_tiles][y_tiles];
+        level_x_tiles = x_tiles;
+        level_y_tiles = y_tiles;
         generateMap(seed);
         return levelTiles;
     }
@@ -50,7 +63,6 @@ public class MapGenerator
             doSimulationStep();
         }
         // Now copy the raw map into an array of level tiles
-        createTileObjects();
     }
 
     // Seed the map with a seed value provided
@@ -60,14 +72,14 @@ public class MapGenerator
                 "Trying to seed the world with seed: " + seed);
         Random rand = new Random();
         float chanceToStartAlive = (float)(rand.nextInt(10) / 100) + 0.40f;
-        map = new boolean[Constants.LEVEL_X_TILES][Constants.LEVEL_Y_TILES];
 
         // Iterate over the entire level and set each tile to true or false
-        for (int x = 0; x < Constants.LEVEL_X_TILES; x++) {
-            for (int y = 0; y < Constants.LEVEL_Y_TILES; y++) {
+        for (int x = 0; x < level_x_tiles; x++) {
+            for (int y = 0; y < level_y_tiles; y++) {
                 if (rand.nextFloat() < chanceToStartAlive) {
-                    map[x][y] = true;
+                    levelTiles[x][y] = 1;
                 }
+                else levelTiles[x][y] = 0;
             }
         }
 
@@ -76,39 +88,38 @@ public class MapGenerator
     // Use this method to further refine the map after initially generated
     private void doSimulationStep() {
 
-        boolean[][] newMap =
-                new boolean[Constants.LEVEL_X_TILES][Constants.LEVEL_Y_TILES];
+        int[][] newMap = new int[level_x_tiles][level_y_tiles];
         // Loop over each row and column of the map
-        for(int x = 0; x < map.length; x++) {
-            for(int y = 0; y < map[0].length; y++) {
-                int nbs = countAliveNeighbors(map, x, y);
+        for(int x = 0; x < levelTiles.length; x++) {
+            for(int y = 0; y < levelTiles[0].length; y++) {
+                int nbs = countAliveNeighbors(levelTiles, x, y);
                 // The new value is based on our simulation rules
                 // First, if a cell is alive but has too few neighbors, kill it
-                if(map[x][y]) {
+                if(levelTiles[x][y] == 1) {
                     if(nbs < deathLimit) {
-                        newMap[x][y] = false;
+                        newMap[x][y] = 0;
                     }
                     else {
-                        newMap[x][y] = true;
+                        newMap[x][y] = 1;
                     }
                 }
                 // Otherwise, if the cell is dead now, check if it has the
                 //   right number of neighbors to be 'born'
                 else {
                     if(nbs > birthLimit) {
-                        newMap[x][y] = true;
+                        newMap[x][y] = 1;
                     }
                     else {
-                        newMap[x][y] = false;
+                        newMap[x][y] = 0;
                     }
                 }
             }
         }
-        map = newMap;
+        levelTiles = newMap;
     }
 
     // Returns the number of cells in a ring around (x,y) that are alive
-    private int countAliveNeighbors (boolean[][] map, int x, int y) {
+    private int countAliveNeighbors (int[][] map, int x, int y) {
         int count = 0;
         for (int i = -1; i < 2; i++) {
             for (int j = -1; j < 2; j++) {
@@ -125,34 +136,12 @@ public class MapGenerator
                     count = count + 1;
                 }
                 // Otherwise, a normal check of the neighbor
-                else if(map[neighbor_x][neighbor_y]) {
+                else if(map[neighbor_x][neighbor_y] == 0) {
                     count = count + 1;
                 }
             }
         }
         return count;
-    }
-
-    private void createTileObjects() {
-        for (int x = 0; x < Constants.LEVEL_X_TILES; x++) {
-            for (int y = 0; y < Constants.LEVEL_Y_TILES; y++) {
-                LevelTile ltile = new LevelTile();
-                ltile.setCellPosition(x,y);
-                ltile.setPosition(
-                        (x * Constants.TILE_WIDTH/Constants.WORLD_SCALE) +
-                                ltile.getDimension().x/2,
-                        y * Constants.TILE_HEIGHT/Constants.WORLD_SCALE +
-                                ltile.getDimension().y/2
-                );
-                if (map[x][y]) {
-                    ltile.setSolid(true);
-                }
-                else {
-                    ltile.setSolid(false);
-                }
-                levelTiles.add(ltile);
-            }
-        }
     }
 
     // Getters
