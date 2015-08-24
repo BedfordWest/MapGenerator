@@ -9,7 +9,7 @@ import java.util.logging.*;
 
 
 /**
- * This is a class to procedurally generate a map based on cellular autonoma and
+ * This is a class to procedurally generate a map based on cellular automata and
  * store it as an array of integers. Regardless of map type, 0 will always stand
  * for a "dead" cell. Dead cells are meant to represent things like walls or
  * impassable terrain. As of the time of this writing, the only other cell type
